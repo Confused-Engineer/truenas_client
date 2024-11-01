@@ -1,4 +1,4 @@
 mod encrypt;
-mod api;
+mod api_lib;
 
-mod serde;
+mod api;
