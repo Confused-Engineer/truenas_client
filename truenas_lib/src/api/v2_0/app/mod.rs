@@ -1,182 +1,206 @@
+pub mod upgrade_summary;
+pub mod upgrade;
+
+const DIR: &str = "/api/v2.0/app";
+
+
+use crate::server::Server;
+
+/// Retrieves the list of installed apps from the server
+/// ```
+/// let mut server: Server = Server::new("ip", "key");
+/// let result = truenas_lib::get::<AppList>(&url, &server.key());
+/// println!("{:#?}", result);
+/// ```
+pub fn get(server: &mut Server) -> Result<AppList, reqwest::Error>
+{
+    let url = format!("{}{}", server.url(), DIR);
+    let res = crate::api_commands::get::<AppList>(&url, &server.key())?;
+    Ok(res)
+}
+
+
+
+
 use serde::Deserialize;
 use serde::Serialize;
 
 
-pub type Root = Vec<Root2>;
+type AppList = Vec<Application>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Root2 {
-    pub name: String,
-    pub id: String,
+pub struct Application {
+    name: String,
+    id: String,
     #[serde(rename = "active_workloads")]
-    pub active_workloads: ActiveWorkloads,
-    pub state: String,
+    active_workloads: ActiveWorkloads,
+    state: String,
     #[serde(rename = "upgrade_available")]
-    pub upgrade_available: bool,
+    upgrade_available: bool,
     #[serde(rename = "image_updates_available")]
-    pub image_updates_available: bool,
+    image_updates_available: bool,
     #[serde(rename = "custom_app")]
-    pub custom_app: bool,
+    custom_app: bool,
     #[serde(rename = "human_version")]
-    pub human_version: String,
-    pub metadata: Metadata,
-    pub migrated: bool,
-    pub notes: String,
-    pub portals: Portals,
-    pub version: String,
+    human_version: String,
+    metadata: Metadata,
+    migrated: bool,
+    notes: String,
+    portals: Portals,
+    version: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ActiveWorkloads {
-    pub containers: i64,
+struct ActiveWorkloads {
+    containers: i64,
     #[serde(rename = "used_ports")]
-    pub used_ports: Vec<UsedPort>,
+    used_ports: Vec<UsedPort>,
     #[serde(rename = "container_details")]
-    pub container_details: Vec<ContainerDetail>,
-    pub volumes: Vec<Volume>,
-    pub images: Vec<String>,
+    container_details: Vec<ContainerDetail>,
+    volumes: Vec<Volume>,
+    images: Vec<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UsedPort {
+struct UsedPort {
     #[serde(rename = "container_port")]
-    pub container_port: i64,
-    pub protocol: String,
+    container_port: i64,
+    protocol: String,
     #[serde(rename = "host_ports")]
-    pub host_ports: Vec<HostPort>,
+    host_ports: Vec<HostPort>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct HostPort {
+struct HostPort {
     #[serde(rename = "host_port")]
-    pub host_port: i64,
+    host_port: i64,
     #[serde(rename = "host_ip")]
-    pub host_ip: String,
+    host_ip: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ContainerDetail {
+struct ContainerDetail {
     #[serde(rename = "service_name")]
-    pub service_name: String,
-    pub image: String,
+    service_name: String,
+    image: String,
     #[serde(rename = "port_config")]
-    pub port_config: Vec<PortConfig>,
-    pub state: String,
+    port_config: Vec<PortConfig>,
+    state: String,
     #[serde(rename = "volume_mounts")]
-    pub volume_mounts: Vec<VolumeMount>,
-    pub id: String,
+    volume_mounts: Vec<VolumeMount>,
+    id: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PortConfig {
+struct PortConfig {
     #[serde(rename = "container_port")]
-    pub container_port: i64,
-    pub protocol: String,
+    container_port: i64,
+    protocol: String,
     #[serde(rename = "host_ports")]
-    pub host_ports: Vec<HostPort2>,
+    host_ports: Vec<HostPort2>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct HostPort2 {
+struct HostPort2 {
     #[serde(rename = "host_port")]
-    pub host_port: i64,
+    host_port: i64,
     #[serde(rename = "host_ip")]
-    pub host_ip: String,
+    host_ip: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct VolumeMount {
-    pub source: String,
-    pub destination: String,
-    pub mode: String,
+struct VolumeMount {
+    source: String,
+    destination: String,
+    mode: String,
     #[serde(rename = "type")]
-    pub type_field: String,
+    type_field: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Volume {
-    pub source: String,
-    pub destination: String,
-    pub mode: String,
+struct Volume {
+    source: String,
+    destination: String,
+    mode: String,
     #[serde(rename = "type")]
-    pub type_field: String,
+    type_field: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Metadata {
+struct Metadata {
     #[serde(rename = "app_version")]
-    pub app_version: String,
-    pub capabilities: Vec<Capability>,
-    pub categories: Vec<String>,
-    pub description: String,
-    pub home: String,
+    app_version: String,
+    capabilities: Vec<Capability>,
+    categories: Vec<String>,
+    description: String,
+    home: String,
     #[serde(rename = "host_mounts")]
-    pub host_mounts: Vec<HostMount>,
-    pub icon: String,
-    pub keywords: Vec<String>,
+    host_mounts: Vec<HostMount>,
+    icon: String,
+    keywords: Vec<String>,
     #[serde(rename = "lib_version")]
-    pub lib_version: String,
+    lib_version: String,
     #[serde(rename = "lib_version_hash")]
-    pub lib_version_hash: String,
-    pub maintainers: Vec<Maintainer>,
-    pub name: String,
+    lib_version_hash: String,
+    maintainers: Vec<Maintainer>,
+    name: String,
     #[serde(rename = "run_as_context")]
-    pub run_as_context: Vec<RunAsContext>,
-    pub screenshots: Vec<String>,
-    pub sources: Vec<String>,
-    pub title: String,
-    pub train: String,
-    pub version: String,
+    run_as_context: Vec<RunAsContext>,
+    screenshots: Vec<String>,
+    sources: Vec<String>,
+    title: String,
+    train: String,
+    version: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Capability {
-    pub description: String,
-    pub name: String,
+struct Capability {
+    description: String,
+    name: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct HostMount {
-    pub description: String,
+struct HostMount {
+    description: String,
     #[serde(rename = "host_path")]
-    pub host_path: String,
+    host_path: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Maintainer {
-    pub email: String,
-    pub name: String,
-    pub url: String,
+struct Maintainer {
+    email: String,
+    name: String,
+    url: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RunAsContext {
-    pub description: String,
-    pub gid: i64,
+struct RunAsContext {
+    description: String,
+    gid: i64,
     #[serde(rename = "group_name")]
-    pub group_name: String,
-    pub uid: i64,
+    group_name: String,
+    uid: i64,
     #[serde(rename = "user_name")]
-    pub user_name: String,
+    user_name: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Portals {
+struct Portals {
     #[serde(rename = "Web UI")]
-    pub web_ui: String,
+    web_ui: String,
 }

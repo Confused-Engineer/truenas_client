@@ -6,9 +6,8 @@ authors = ["Confused Engineer"]
 
 [dependencies]
 davids-awesome-library = {path = "../davids-awesome-library"}
+truenas_lib = {path = "./truenas_lib"}
+prometheus_lib = {path = "./prometheus_lib"}
 simple_crypt = "0.2.3"
 
-reqwest = { version = "0.12.9", features = ["json"] }
-tokio = { version = "1.41.0", features = ["full"] }
-futures = "0.3.31"
-serde = { version = "1.0.214", features = ["derive"] }
+
