@@ -7,7 +7,8 @@ pub(crate) async fn get<T: serde::de::DeserializeOwned>(url: &str, key: &str)-> 
     let resp = client.get(url)
         .bearer_auth(key)
         .send()
-        .await?.json::<T>()
+        .await?
+        .json::<T>()
         .await?;
 
     return Ok(resp);

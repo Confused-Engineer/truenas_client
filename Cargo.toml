@@ -9,5 +9,14 @@ davids-awesome-library = {path = "../davids-awesome-library"}
 truenas_lib = {path = "./truenas_lib"}
 prometheus_lib = {path = "./prometheus_lib"}
 simple_crypt = "0.2.3"
+eframe = "0.29.1"
+egui_extras = { version = "0.29.1", features = ["all_loaders"]}
+image = { version = "0.25.4", features = ["png"] }
 
 
+
+
+[profile.release]
+lto = "fat"
+strip = "symbols"
+codegen-units = 1

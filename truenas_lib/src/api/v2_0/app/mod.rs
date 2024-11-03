@@ -26,7 +26,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 
-type AppList = Vec<Application>;
+pub type AppList = Vec<Application>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -49,6 +49,39 @@ pub struct Application {
     notes: String,
     portals: Portals,
     version: String,
+}
+
+impl Application
+{
+    pub fn get_name(&mut self) -> String
+    {
+        self.name.clone()
+    }
+
+    pub fn get_id(&mut self) -> String
+    {
+        self.id.clone()
+    }
+
+    pub fn get_state(&mut self) -> String
+    {
+        self.state.clone()
+    }
+
+    pub fn get_version(&mut self) -> String
+    {
+        self.version.clone()
+    }
+
+    pub fn upgrade_available(&mut self) -> bool
+    {
+        self.upgrade_available.clone()
+    }
+
+    pub fn icon_url(&mut self) -> String
+    {
+        self.metadata.icon.clone()
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -6,7 +6,12 @@ use crate::server::Server;
 pub fn get(server: &mut Server) -> Result<AllVMs, reqwest::Error>
 {
     let url = format!("{}{}", server.url(), DIR);
+    
     let res = crate::api_commands::get::<AllVMs>(&url, &server.key())?;
+
+    
+    
+
     Ok(res)
 }
 
@@ -17,7 +22,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 
-type AllVMs = Vec<VM>;
+pub type AllVMs = Vec<VM>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +74,29 @@ pub struct VM {
     #[serde(rename = "display_available")]
     display_available: bool,
     status: Status,
+}
+
+impl VM
+{
+    pub fn get_name(&mut self) -> String
+    {
+        self.name.clone()
+    }
+
+    pub fn get_cpu(&mut self) -> (i64, i64)
+    {
+        (self.cores.clone(), self.threads.clone())
+    }
+
+    pub fn get_memory(&mut self) -> i64
+    {
+        self.memory.clone()
+    }
+
+    pub fn get_status(&mut self) -> String
+    {
+        self.status.state.clone()
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -4,7 +4,7 @@ const KEY: &[u8; 512] = include_bytes!("../assets/key");
 
 
 #[derive(Clone)]
-struct Encrypt
+pub struct Encrypt
 {
     api_key: String,
     file_name: String,
@@ -14,7 +14,7 @@ struct Encrypt
 
 impl Encrypt
 {
-    fn new(file_name: &str) -> Self
+    pub fn new(file_name: &str) -> Self
     {
         Encrypt { 
             api_key: String::new(),
@@ -22,29 +22,46 @@ impl Encrypt
         }
     }
 
-    fn set_key(&mut self, key: &str)
+    pub fn set_key(&mut self, key: &str) -> &mut Self
     {
         self.api_key = key.to_string();
+        self
     }
 
-    fn get_key(&mut self) -> String
+    pub fn get_key(&mut self) -> String
     {
         self.api_key.clone()
     }
 
 
-    fn save_file(&mut self) -> std::io::Result<()>
+    pub fn save_file(&mut self) -> std::io::Result<()>
     {
-        let mut file = std::fs::File::options().create(true).read(false).write(true).open(self.file_name.clone())?;
+        let home_dir = davids_awesome_library::env::get_home()?;
+        let save_path = format!("{}/.truenas-client/", home_dir);
+        
+        let path = std::path::Path::new(&save_path);
+        if !path.exists()
+        {
+            let _ = std::fs::create_dir_all(path);
+        }
+
+        let save_local = format!("{}/.truenas-client/{}", home_dir, self.file_name);
+        
+
+        let mut file = std::fs::File::options().create(true).read(false).write(true).open(save_local)?;
         let encrypted_data: Vec<u8> = simple_crypt::encrypt(&self.api_key.as_bytes(), KEY).expect("Failed to encrypt");
         
         file.write_all(&encrypted_data)?;
         Ok(())
     }
 
-    fn load_file(&mut self) -> std::io::Result<()>
+    pub fn load_file(&mut self) -> std::io::Result<()>
     {
-        let encrypted: Vec<u8> = std::fs::read(&self.file_name)?;
+        let home_dir = davids_awesome_library::env::get_home()?;
+
+        let save_local = format!("{}/.truenas-client/{}", home_dir, self.file_name);
+        let encrypted: Vec<u8> = std::fs::read(&save_local)?;
+
         let data: Vec<u8> = simple_crypt::decrypt(&encrypted, KEY).expect("Failed to decrypt");
         let string_wrapped = String::from_utf8(data);
 

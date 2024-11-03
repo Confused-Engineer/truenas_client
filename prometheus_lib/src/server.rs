@@ -16,6 +16,12 @@ impl Prometheus
         }
     }
 
+    pub fn test(&mut self) -> reqwest::Result<()>
+    {
+        crate::api::v1::query::cpu::usage::get(self)?;
+        Ok(())
+    }
+
     pub(crate) fn url(&mut self) -> String
     {
         self.url.clone()

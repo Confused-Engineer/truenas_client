@@ -4,13 +4,14 @@ const DIR: &str = "/api/v1/query?query=(sum(irate(node_cpu_seconds_total {mode!=
 use crate::server::Prometheus;
 
 
-pub fn get(prometheus: &mut Prometheus) -> reqwest::Result<String>
+pub fn get(prometheus: &mut Prometheus) -> reqwest::Result<f64>
 {
     let url = format!("{}{}", prometheus.url(), DIR);
     let res = crate::api_commands::get::<Usage>(&url)?;
 
-    let res_string = &res.data.result[0].value.1.clone()[0..3];
-    Ok(res_string.to_string())
+    let res_string = res.data.result[0].value.1.clone()[0..3].parse::<f64>();
+    
+    Ok(res_string.unwrap())
 }
 
 
@@ -24,7 +25,7 @@ use serde::Serialize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Usage {
+struct Usage {
     status: String,
     data: Data,
 }

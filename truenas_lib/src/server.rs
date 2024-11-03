@@ -16,6 +16,12 @@ impl Server
         }
     }
 
+    pub fn test(&mut self) -> reqwest::Result<()>
+    {
+        crate::api::v2_0::system::version_short::get(self)?;
+        Ok(())
+    }
+
     pub(crate) fn url(&mut self) -> String
     {
         self.url.clone()
