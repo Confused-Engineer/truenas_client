@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::fmt::format;
+
 use eframe::{egui, App};
 
 fn main() -> eframe::Result 
@@ -44,8 +46,16 @@ struct Dashboard
     truenas_is_ok: bool,
     prometheus_is_ok: bool,
 
+    cpu_usage: f64,
+
     applist: truenas_lib::api::v2_0::app::AppList,
-    virtualmachinelist: truenas_lib::api::v2_0::vm::AllVMs
+    multithread_applist: (std::sync::mpsc::Sender<truenas_lib::api::v2_0::app::AppList>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::app::AppList>),
+
+    virtualmachinelist: truenas_lib::api::v2_0::vm::AllVMs,
+    multithread_virtualmachinelist: (std::sync::mpsc::Sender<truenas_lib::api::v2_0::vm::AllVMs>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::vm::AllVMs>),
+
+    
+    
 }
 
 impl Default for Dashboard
@@ -65,8 +75,15 @@ impl Default for Dashboard
             truenas_is_ok: Self::load_data().3,
             prometheus_is_ok: Self::load_data().4,
 
+            cpu_usage: 0.0,
+
             applist: Vec::new(),
+            multithread_applist: std::sync::mpsc::channel(),
+
             virtualmachinelist: Vec::new(),
+            multithread_virtualmachinelist: std::sync::mpsc::channel(),
+            
+            
         }
     }
 }
@@ -79,6 +96,7 @@ impl Dashboard {
         Default::default()
     }
 
+    
     fn load_data() -> (truenas_lib::server::Server, prometheus_lib::server::Prometheus, AppState, bool, bool)
     {
         let mut con = ConnectionData::load();
@@ -197,17 +215,24 @@ impl Dashboard {
     {
         ui.columns(4, |ui|{
 
-            egui::ScrollArea::vertical().show(&mut ui[0], |ui| {
+            egui::ScrollArea::vertical().id_salt("first_scroll_area").show(&mut ui[0], |ui| {
 
                 // App List
-                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("Apps").size(20.0)).frame(false)).on_hover_text("Click To Load Apps").clicked()
+                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("Applications").size(20.0)).frame(false)).on_hover_text("Click To Load App's").clicked()
                 {
                     let temp = truenas_lib::api::v2_0::app::get(&mut self.truenas);
                     if temp.is_ok()
                     {
                         self.applist = temp.unwrap();
-                    }
+                    } 
                 }
+
+                let temp = self.multithread_applist.1.try_recv();
+                if temp.is_ok()
+                {
+                    self.applist = temp.unwrap();
+                }
+                
                 ui.separator();
                 for mut app in self.applist.clone()
                 {
@@ -243,25 +268,85 @@ impl Dashboard {
                     if temp.is_ok()
                     {
                         self.virtualmachinelist = temp.unwrap();
-                    } else {
-                        println!("{:#?}", temp);
                     }
                 }
+
+                let temp = self.multithread_virtualmachinelist.1.try_recv();
+                if temp.is_ok()
+                {
+                    self.virtualmachinelist = temp.unwrap();
+                }
+
                 ui.separator();
                 for mut vm in self.virtualmachinelist.clone()
                 {
                     
                     ui.heading(vm.get_name());
-                    ui.label(format!("Cores: {} | Thread per Core: {}", vm.get_cpu().0, vm.get_cpu().1));
+                    ui.label(format!("Cores: {} | Threads per Core: {}", vm.get_cpu().0, vm.get_cpu().1));
                     ui.label(format!("Assigned RAM: {}", vm.get_memory()));
                     ui.label(format!("Status: {}", vm.get_status()));
                     ui.separator();
                 }
             });
+
+            egui::ScrollArea::vertical().id_salt("second_scroll_area").show(&mut ui[1], |ui| {
+                
+                //CPU Usage
+                
+                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("CPU Usage").size(20.0)).frame(false)).on_hover_text("Click To Load VM's").clicked()
+                {
+                    let temp = prometheus_lib::api::v1::query::cpu::usage::get(&mut self.prometheus);
+                    if temp.is_ok()
+                    {
+                        self.cpu_usage = temp.unwrap();
+                    }
+                }
+
+                
+
+                ui.separator();
+
+                ui.heading(format!("Total Usage: {}%", self.cpu_usage));
+                
+                ui.separator();
+
+                //RAM Usage
+            });
             
         });
     }
 
+    fn start_multi(&mut self)
+    {
+        
+        let mut svr_clone = self.truenas.clone();
+        let applist_tx = self.multithread_applist.0.clone();
+        std::thread::spawn(move || {
+            loop {
+                let applist_thread = truenas_lib::api::v2_0::app::get(&mut svr_clone);
+                if applist_thread.is_ok()
+                {
+                    let unwrap = applist_thread.unwrap();
+                    applist_tx.send(unwrap).unwrap()
+                }
+                std::thread::sleep(std::time::Duration::from_secs(20));
+            }
+        });
+
+        let mut svr_clone = self.truenas.clone();
+        let virtualmachine_tx = self.multithread_virtualmachinelist.0.clone();
+        std::thread::spawn(move || {
+            loop {
+                let virtual_thread = truenas_lib::api::v2_0::vm::get(&mut svr_clone);
+                if virtual_thread.is_ok()
+                {
+                    let unwrap = virtual_thread.unwrap();
+                    virtualmachine_tx.send(unwrap).unwrap()
+                }
+                std::thread::sleep(std::time::Duration::from_secs(20));
+            }
+        });
+    }
     
 }
 
@@ -278,8 +363,15 @@ impl eframe::App for Dashboard {
                     if ui.button("Preferences").clicked()
                     {
                         self.page = AppState::Preferences;
+                        ui.close_menu();
                     }
 
+
+                    if ui.button("Start").clicked()
+                    {
+                        self.start_multi();
+                        ui.close_menu();
+                    }
                     ui.add_space(10.0);
 
                     if ui.button("Quit").clicked()
