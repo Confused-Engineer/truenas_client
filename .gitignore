@@ -1,4 +1,8 @@
 /target
 /assets/key
 /assets/api_key
-/Cargo.lock
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
