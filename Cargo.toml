@@ -12,7 +12,7 @@ winres = "0.1"
 static_vcruntime = "2.0"
 
 [dependencies]
-davids-awesome-library = {path = "../davids-awesome-library"}
+davids-awesome-library = {git = "https://github.com/Confused-Engineer/davids-awesome-library.git"}
 truenas_lib = {path = "./truenas_lib"}
 prometheus_lib = {path = "./prometheus_lib"}
 simple_crypt = "0.2.3"
