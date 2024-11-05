@@ -18,6 +18,29 @@ pub fn get(server: &mut Server) -> Result<AllDisks, reqwest::Error>
 }
 
 
+impl Disk
+{
+    pub fn get_name(&mut self) -> String
+    {
+        self.name.clone()
+    }
+
+    pub fn get_serial(&mut self) -> String
+    {
+        self.serial.clone()
+    }
+
+    pub fn get_model(&mut self) -> String
+    {
+        self.model.clone()
+    }
+
+    pub fn get_capaticity(&mut self) -> i64
+    {
+        self.size / 1000000000
+    }
+}
+
 
 
 
@@ -25,7 +48,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 
-type AllDisks = Vec<Disk>;
+pub type AllDisks = Vec<Disk>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

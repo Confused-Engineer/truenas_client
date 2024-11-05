@@ -10,13 +10,34 @@ pub fn get(server: &mut Server) -> Result<AllServices, reqwest::Error>
     Ok(res)
 }
 
+impl Service
+{
+    pub fn get_id(&mut self) -> i64
+    {
+        self.id.clone()
+    }
 
+    pub fn get_service(&mut self) -> String
+    {
+        self.service.clone()
+    }
+
+    pub fn is_enabled(&mut self) -> bool
+    {
+        self.enable.clone()
+    }
+
+    pub fn get_state(&mut self) -> String
+    {
+        self.state.clone()
+    }
+}
 
 
 use serde::Deserialize;
 use serde::Serialize;
 
-type AllServices = Vec<Service>;
+pub type AllServices = Vec<Service>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

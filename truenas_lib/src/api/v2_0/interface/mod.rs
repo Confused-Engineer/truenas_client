@@ -23,8 +23,59 @@ use serde::Serialize;
 use serde_json::Value;
 
 
-type AllInterfaces = Vec<Interface>;
+pub type AllInterfaces = Vec<Interface>;
 
+
+impl Interface {
+    pub fn get_id(&mut self) -> String
+    {
+        self.id.clone()
+    }
+
+    pub fn get_name(&mut self) -> String
+    {
+        self.name.clone()
+    }
+
+    pub fn is_fake(&mut self) -> bool
+    {
+        self.fake.clone()
+    }
+
+    pub fn ipv4_is_dhcp(&mut self) -> bool
+    {
+        self.ipv4_dhcp.clone()
+    }
+
+    pub fn addr_netmask(&mut self) -> (String, i64)
+    {
+
+        for alias in self.aliases.clone().into_iter()
+        {
+            if alias.type_field == String::from("INET")
+            {
+                return (alias.address, alias.netmask)
+            }
+        }
+        
+        for alias in self.state.aliases.clone().into_iter()
+        {
+            if alias.type_field == String::from("INET")
+            {
+                return (alias.address, alias.netmask.unwrap_or(0))
+            }
+        }
+
+        (String::from("Err"), 0)
+        
+    }
+
+    pub fn mac_addr(&mut self) -> String
+    {
+        self.state.permanent_link_address.clone()
+    }
+
+}
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Interface {

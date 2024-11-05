@@ -10,13 +10,40 @@ pub fn get(server: &mut Server) -> Result<SnapshotTasks, reqwest::Error>
 }
 
 
+impl Task
+{
+    pub fn get_id(&mut self) -> i64
+    {
+        self.id.clone()
+    }
+
+    pub fn get_dataset(&mut self) -> String
+    {
+        self.dataset.clone()
+    }
+
+    pub fn is_recursive(&mut self) -> bool
+    {
+        self.recursive.clone()
+    }
+
+    pub fn lifetime(&mut self) -> (i64, String)
+    {
+        (self.lifetime_value.clone(), self.lifetime_unit.clone())
+    }
+
+    pub fn get_schedule(&mut self) -> String
+    {
+        format!("{}{}{}{}{}", self.schedule.minute.clone(), self.schedule.hour.clone(), self.schedule.dom.clone(), self.schedule.month.clone(), self.schedule.dow.clone())
+    }
+}
 
 
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 
-type SnapshotTasks = Vec<Task>;
+pub type SnapshotTasks = Vec<Task>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -3,6 +3,13 @@ name = "truenas_client"
 version = "0.1.0"
 edition = "2021"
 authors = ["Confused Engineer"]
+build = "src/build.rs"
+
+
+
+[build-dependencies]
+winres = "0.1"
+static_vcruntime = "2.0"
 
 [dependencies]
 davids-awesome-library = {path = "../davids-awesome-library"}
@@ -14,9 +21,22 @@ egui_extras = { version = "0.29.1", features = ["all_loaders"]}
 image = { version = "0.25.4", features = ["png"] }
 
 
-
-
 [profile.release]
 lto = "fat"
 strip = "symbols"
 codegen-units = 1
+
+
+[package.metadata.bundle]
+name = "TrueNAS Client"
+identifier = "com.confusedengineer.tabletoptracker"
+icon = ["icon.png"]
+version = "0.1.0"
+#resources = ["assets", "images/**/*.png", "secrets/public_key.txt"]
+copyright = "Copyright (c) Confused Engineer 2024. All rights reserved."
+category = "Developer Tool"
+short_description = "Interact with TueNAS Scale via API."
+long_description = """
+This tool is meant for basic monitoring and functions
+of a TrueNAS Scale system using TrueNAS and Prometheus API.
+"""

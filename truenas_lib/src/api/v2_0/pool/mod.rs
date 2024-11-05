@@ -12,13 +12,104 @@ pub fn get(server: &mut Server) -> Result<AllPools, reqwest::Error>
 }
 
 
+impl Pool
+{
+    pub fn get_name(&mut self) -> String
+    {
+        self.name.clone()
+    }
 
+    pub fn get_path(&mut self) -> String
+    {
+        self.path.clone()
+    }
+
+    pub fn is_healthy(&mut self) -> bool
+    {
+        self.healthy.clone()
+    }
+
+    pub fn scan_err(&mut self) -> i64
+    {
+        self.scan.errors.clone()
+    }
+
+    pub fn get_capacity(&mut self) -> i64
+    {
+        self.size / 1000000000
+    }
+
+    pub fn get_free(&mut self) -> i64
+    {
+        self.free / 1000000000
+    }
+
+    pub fn get_used(&mut self) -> i64
+    {
+        (self.size - self.free) / 1000000000
+    }
+
+    pub fn get_topology(&mut self) -> Topology
+    {
+        self.topology.clone()
+    }
+}
+
+impl Topology
+{
+    pub fn get_data_vdev(&mut self) -> Vec<Daum>
+    {
+        self.data.clone()
+    }
+
+    pub fn get_spare_vdev(&mut self) -> Vec<Spare>
+    {
+        self.spare.clone()
+    }
+}
+
+impl VdevOptions for Daum
+{
+    fn get_name(&mut self) -> String {
+        self.name.clone()
+    }
+
+    fn get_type(&mut self) -> String {
+        self.type_field.clone()
+    }
+
+    fn get_r_w_checksume_errors(&mut self) -> (i64, i64, i64) {
+        (self.stats.read_errors.clone(), self.stats.write_errors.clone(), self.stats.checksum_errors.clone())
+    }
+}
+
+impl VdevOptions for Spare
+{
+    fn get_name(&mut self) -> String {
+        self.name.clone()
+    }
+
+    fn get_type(&mut self) -> String {
+        self.type_field.clone()
+    }
+
+    fn get_r_w_checksume_errors(&mut self) -> (i64, i64, i64) {
+        (self.stats.read_errors.clone(), self.stats.write_errors.clone(), self.stats.checksum_errors.clone())
+    }
+}
+
+
+pub trait VdevOptions {
+    fn get_name(&mut self) -> String;
+    fn get_type(&mut self) -> String;
+    fn get_r_w_checksume_errors(&mut self) -> (i64, i64, i64);
+}
 
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 
-type AllPools = Vec<Pool>;
+pub type AllPools = Vec<Pool>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -91,7 +182,7 @@ struct EndTime {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Topology {
+pub struct Topology {
     data: Vec<Daum>,
     log: Vec<Value>,
     cache: Vec<Value>,
@@ -102,7 +193,7 @@ struct Topology {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Daum {
+pub struct Daum {
     name: String,
     #[serde(rename = "type")]
     type_field: String,
@@ -184,7 +275,7 @@ struct Stats2 {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Spare {
+pub struct Spare {
     name: String,
     #[serde(rename = "type")]
     type_field: String,

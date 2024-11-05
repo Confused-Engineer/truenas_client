@@ -4,7 +4,7 @@ const FREE: &str = "/api/v1/query?query=node_memory_MemFree_bytes";
 
 use crate::server::Prometheus;
 
-
+#[derive(Clone)]
 pub struct Memory
 {
     total: u64,
@@ -14,8 +14,19 @@ pub struct Memory
     prom_svr: Prometheus
 }
 
+
 impl Memory
 {
+    pub fn new() -> Self
+    {
+        Self {
+            total: 0,
+            used: 0,
+            free: 0,
+            in_gb: false,
+            prom_svr: crate::server::Prometheus::new(""),
+        }
+    }
     pub fn load(prometheus: &mut Prometheus) -> Self
     {
         let byte_str = get(prometheus).unwrap_or((0,0));

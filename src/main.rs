@@ -1,8 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::fmt::format;
-
-use eframe::{egui, App};
+use eframe::egui;
+use truenas_lib::api::v2_0::pool::VdevOptions;
 
 fn main() -> eframe::Result 
 {
@@ -31,7 +30,7 @@ fn main() -> eframe::Result
 
 
 
-struct Dashboard
+pub struct Dashboard
 {
     connections: ConnectionData,
     page: AppState,
@@ -45,8 +44,14 @@ struct Dashboard
 
     truenas_is_ok: bool,
     prometheus_is_ok: bool,
+    truenas_multithread_started: bool,
+    prometheus_multithread_started: bool,
 
     cpu_usage: f64,
+    multithread_cpu_usage: (std::sync::mpsc::Sender<f64>, std::sync::mpsc::Receiver<f64>),
+
+    memory_usage: prometheus_lib::api::v1::query::memory::Memory,
+    multithread_memory_usage: (std::sync::mpsc::Sender<prometheus_lib::api::v1::query::memory::Memory>, std::sync::mpsc::Receiver<prometheus_lib::api::v1::query::memory::Memory>),
 
     applist: truenas_lib::api::v2_0::app::AppList,
     multithread_applist: (std::sync::mpsc::Sender<truenas_lib::api::v2_0::app::AppList>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::app::AppList>),
@@ -54,8 +59,21 @@ struct Dashboard
     virtualmachinelist: truenas_lib::api::v2_0::vm::AllVMs,
     multithread_virtualmachinelist: (std::sync::mpsc::Sender<truenas_lib::api::v2_0::vm::AllVMs>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::vm::AllVMs>),
 
-    
-    
+    interface_details: truenas_lib::api::v2_0::interface::AllInterfaces,
+    multithread_interface_details:(std::sync::mpsc::Sender<truenas_lib::api::v2_0::interface::AllInterfaces>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::interface::AllInterfaces>),
+
+    disk_details: truenas_lib::api::v2_0::disk::AllDisks,
+    multithread_disk_details:(std::sync::mpsc::Sender<truenas_lib::api::v2_0::disk::AllDisks>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::disk::AllDisks>),
+
+    pool_details: truenas_lib::api::v2_0::pool::AllPools,
+    multithread_pool_details:(std::sync::mpsc::Sender<truenas_lib::api::v2_0::pool::AllPools>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::pool::AllPools>),
+
+    snapshot_details: truenas_lib::api::v2_0::pool::snapshottask::SnapshotTasks,
+    multithread_snapshot_details:(std::sync::mpsc::Sender<truenas_lib::api::v2_0::pool::snapshottask::SnapshotTasks>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::pool::snapshottask::SnapshotTasks>),
+
+    service_details: truenas_lib::api::v2_0::service::AllServices,
+    multithread_service_details:(std::sync::mpsc::Sender<truenas_lib::api::v2_0::service::AllServices>, std::sync::mpsc::Receiver<truenas_lib::api::v2_0::service::AllServices>),
+
 }
 
 impl Default for Dashboard
@@ -75,14 +93,35 @@ impl Default for Dashboard
             truenas_is_ok: Self::load_data().3,
             prometheus_is_ok: Self::load_data().4,
 
+            truenas_multithread_started: false,
+            prometheus_multithread_started: false,
+
             cpu_usage: 0.0,
+            multithread_cpu_usage: std::sync::mpsc::channel(),
+
+            memory_usage: prometheus_lib::api::v1::query::memory::Memory::new(),
+            multithread_memory_usage: std::sync::mpsc::channel(),
 
             applist: Vec::new(),
             multithread_applist: std::sync::mpsc::channel(),
 
             virtualmachinelist: Vec::new(),
             multithread_virtualmachinelist: std::sync::mpsc::channel(),
+
+            interface_details: Vec::new(),
+            multithread_interface_details: std::sync::mpsc::channel(),
+
+            disk_details: Vec::new(),
+            multithread_disk_details: std::sync::mpsc::channel(),
+
+            pool_details: Vec::new(),
+            multithread_pool_details: std::sync::mpsc::channel(),
+
+            snapshot_details: Vec::new(),
+            multithread_snapshot_details: std::sync::mpsc::channel(),
             
+            service_details: Vec::new(),
+            multithread_service_details: std::sync::mpsc::channel(),
             
         }
     }
@@ -302,7 +341,13 @@ impl Dashboard {
                     }
                 }
 
-                
+                let temp = self.multithread_cpu_usage.1.try_recv();
+                {
+                    if temp.is_ok()
+                    {
+                        self.cpu_usage = temp.unwrap();
+                    }
+                }
 
                 ui.separator();
 
@@ -311,6 +356,198 @@ impl Dashboard {
                 ui.separator();
 
                 //RAM Usage
+
+                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("RAM Usage").size(20.0)).frame(false)).on_hover_text("Click To Load VM's").clicked()
+                {
+                    self.memory_usage = prometheus_lib::api::v1::query::memory::Memory::load(&mut self.prometheus);
+                    
+                }
+
+                let temp = self.multithread_memory_usage.1.try_recv();
+                {
+                    if temp.is_ok()
+                    {
+                        self.memory_usage = temp.unwrap();
+                    }
+                }
+
+
+                ui.separator();
+
+                ui.heading(format!("Total RAM: {}GB", self.memory_usage.in_gb().get_total()));
+                ui.heading(format!("Free RAM: {}GB", self.memory_usage.in_gb().get_free()));
+                ui.heading(format!("Used RAM: {}GB", self.memory_usage.in_gb().get_used()));
+                ui.separator();
+
+                
+
+                // network inerfaces
+
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Network Interfaces").size(20.0))});
+                ui.separator();
+                let temp = self.multithread_interface_details.1.try_recv();
+                {
+                    if temp.is_ok()
+                    {
+                        self.interface_details = temp.unwrap();
+                    }
+                }
+
+                for mut interface in self.interface_details.clone().into_iter()
+                {
+                    ui.heading(format!("Name: {}, ID: {}", interface.get_name(), interface.get_id()));
+                    ui.label(format!("Virtual Interface: {}, DHCP Enabled: {}", interface.is_fake(), interface.ipv4_is_dhcp()));
+                    ui.label(format!("Ip Addr / Netmask: {}/{}", interface.addr_netmask().0, interface.addr_netmask().1));
+                }
+                
+                ui.separator();
+                // disks
+
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Disks").size(20.0))});
+                ui.separator();
+                let temp = self.multithread_disk_details.1.try_recv();
+                {
+                    if temp.is_ok()
+                    {
+                        self.disk_details = temp.unwrap();
+                    }
+                }
+                
+                egui::Grid::new("id_salt").min_col_width(50.0).striped(true).show(ui, |ui| {
+
+                    ui.label("Name");
+                    ui.label("Capacity");
+                    ui.label("Model");
+                    ui.label("Serial");
+                    ui.end_row();
+
+                    for mut disk in self.disk_details.clone().into_iter()
+                    {
+                        
+                        
+
+                        ui.label(disk.get_name());
+                        ui.label(format!("{}GB", disk.get_capaticity()));
+                        ui.label(format!("{}", disk.get_model()));
+                        ui.label(format!("{}", disk.get_serial()));
+                        ui.end_row();
+                    }
+
+                });
+
+                
+            });
+
+            egui::ScrollArea::vertical().id_salt("third_scroll_area").show(&mut ui[2], |ui| {
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Pools").size(20.0))});
+                ui.separator();
+
+                let temp = self.multithread_pool_details.1.try_recv();
+                {
+                    if temp.is_ok()
+                    {
+                        self.pool_details = temp.unwrap();
+                    }
+                }
+
+                for mut pool in self.pool_details.clone().into_iter()
+                {
+                    ui.heading(pool.get_name());
+                    ui.label(format!("Capacity: {}GB, Free: {}GB, Used: {}GB", pool.get_capacity(), pool.get_free(), pool.get_used()));
+                    ui.label(format!("Path: {}", pool.get_path()));
+                    ui.label(format!("Healthy: {}, Error Count: {}", pool.is_healthy(), pool.scan_err()));
+                    
+                    ui.add_space(10.0);
+                    ui.heading("Topology:");
+
+                    let data_vdev = pool.get_topology().get_data_vdev();
+
+                    ui.horizontal(|ui|{
+                        ui.add_space(15.0);
+                        ui.heading("Data VDEV's");
+                    });
+                    
+                    for mut data in data_vdev.into_iter()
+                    {
+                        ui.horizontal(|ui|{
+                            ui.add_space(15.0);
+                            ui.label(format!("Name: {}, Type: {}", data.get_name(), data.get_type()));
+                        });
+                        
+                        ui.horizontal(|ui|{
+                            ui.add_space(15.0);
+                            ui.label(format!("Errors; Read: {}, Write: {}, Checksum: {}", data.get_r_w_checksume_errors().0, data.get_r_w_checksume_errors().1, data.get_r_w_checksume_errors().2));
+                        });
+                        ui.add_space(10.0);
+                    }
+
+                    let spare_vdev = pool.get_topology().get_spare_vdev();
+
+                    ui.horizontal(|ui|{
+                        ui.add_space(15.0);
+                        ui.heading("Spare VDEV's");
+                    });
+                    
+                    for mut data in spare_vdev.into_iter()
+                    {
+                        ui.horizontal(|ui|{
+                            ui.add_space(15.0);
+                            ui.label(format!("Name: {}, Type: {}", data.get_name(), data.get_type()));
+                        });
+                        
+                        ui.horizontal(|ui|{
+                            ui.add_space(15.0);
+                            ui.label(format!("Errors; Read: {}, Write: {}, Checksum: {}", data.get_r_w_checksume_errors().0, data.get_r_w_checksume_errors().1, data.get_r_w_checksume_errors().2));
+                        });
+                        ui.add_space(10.0);
+                    }
+
+                    ui.separator();
+
+                }
+
+            });
+
+            egui::ScrollArea::vertical().id_salt("fourth_scroll_area").show(&mut ui[3], |ui| {
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Snapshot Tasks").size(20.0))});
+                ui.separator();
+
+                let temp = self.multithread_snapshot_details.1.try_recv();
+                {
+                    if temp.is_ok()
+                    {
+                        self.snapshot_details = temp.unwrap();
+                    }
+                }
+
+                for mut snapshot in self.snapshot_details.clone().into_iter()
+                {
+                    ui.heading(snapshot.get_dataset());
+                    ui.label(format!("ID: {}, Recursive: {}", snapshot.get_id(), snapshot.is_recursive()));
+                    ui.label(format!("Schedule: {}, Lifetime: {} {}", snapshot.get_schedule(), snapshot.lifetime().0, snapshot.lifetime().1));
+                    ui.separator();
+                
+                }
+
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Services").size(20.0))});
+                ui.separator();
+
+                let temp = self.multithread_service_details.1.try_recv();
+                {
+                    if temp.is_ok()
+                    {
+                        self.service_details = temp.unwrap();
+                    }
+                }
+
+                for mut service in self.service_details.clone().into_iter()
+                {
+                    ui.heading(service.get_service());
+                    ui.label(format!("State: {}, Enabled: {}, ID: {}", service.get_state(), service.is_enabled(), service.get_id()));
+                    ui.separator();
+                
+                }
+
             });
             
         });
@@ -318,34 +555,145 @@ impl Dashboard {
 
     fn start_multi(&mut self)
     {
-        
-        let mut svr_clone = self.truenas.clone();
-        let applist_tx = self.multithread_applist.0.clone();
-        std::thread::spawn(move || {
-            loop {
-                let applist_thread = truenas_lib::api::v2_0::app::get(&mut svr_clone);
-                if applist_thread.is_ok()
-                {
-                    let unwrap = applist_thread.unwrap();
-                    applist_tx.send(unwrap).unwrap()
-                }
-                std::thread::sleep(std::time::Duration::from_secs(20));
-            }
-        });
+        if self.truenas_is_ok && !self.truenas_multithread_started
+        {
 
-        let mut svr_clone = self.truenas.clone();
-        let virtualmachine_tx = self.multithread_virtualmachinelist.0.clone();
-        std::thread::spawn(move || {
-            loop {
-                let virtual_thread = truenas_lib::api::v2_0::vm::get(&mut svr_clone);
-                if virtual_thread.is_ok()
-                {
-                    let unwrap = virtual_thread.unwrap();
-                    virtualmachine_tx.send(unwrap).unwrap()
+            self.truenas_multithread_started = true;
+
+            let mut svr_clone = self.truenas.clone();
+            let applist_tx = self.multithread_applist.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let applist_thread = truenas_lib::api::v2_0::app::get(&mut svr_clone);
+                    if applist_thread.is_ok()
+                    {
+                        let unwrap = applist_thread.unwrap();
+                        let _ = applist_tx.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(20));
                 }
-                std::thread::sleep(std::time::Duration::from_secs(20));
-            }
-        });
+            });
+    
+            let mut svr_clone = self.truenas.clone();
+            let virtualmachine_tx = self.multithread_virtualmachinelist.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let virtual_thread = truenas_lib::api::v2_0::vm::get(&mut svr_clone);
+                    if virtual_thread.is_ok()
+                    {
+                        let unwrap = virtual_thread.unwrap();
+                        let _ = virtualmachine_tx.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(20));
+                }
+            });
+    
+            let mut svr_clone = self.truenas.clone();
+            let interface_details_tx = self.multithread_interface_details.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let interface_thread = truenas_lib::api::v2_0::interface::get(&mut svr_clone);
+                    if interface_thread.is_ok()
+                    {
+                        let unwrap = interface_thread.unwrap();
+                        let _ = interface_details_tx.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                }
+            });
+    
+    
+
+    
+            let mut svr_clone = self.truenas.clone();
+            let transmitter = self.multithread_disk_details.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let temp = truenas_lib::api::v2_0::disk::get(&mut svr_clone);
+                    if temp.is_ok()
+                    {
+                        let unwrap = temp.unwrap();
+                        let _ = transmitter.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                }
+            });
+    
+            let mut svr_clone = self.truenas.clone();
+            let transmitter = self.multithread_pool_details.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let temp = truenas_lib::api::v2_0::pool::get(&mut svr_clone);
+                    if temp.is_ok()
+                    {
+                        let unwrap = temp.unwrap();
+                        let _ = transmitter.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                }
+            });
+    
+            let mut svr_clone = self.truenas.clone();
+            let transmitter = self.multithread_snapshot_details.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let temp = truenas_lib::api::v2_0::pool::snapshottask::get(&mut svr_clone);
+                    if temp.is_ok()
+                    {
+                        let unwrap = temp.unwrap();
+                        let _ = transmitter.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                }
+            });
+    
+            let mut svr_clone = self.truenas.clone();
+            let transmitter = self.multithread_service_details.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let temp = truenas_lib::api::v2_0::service::get(&mut svr_clone);
+                    if temp.is_ok()
+                    {
+                        let unwrap = temp.unwrap();
+                        let _ = transmitter.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                }
+            });
+        }
+        
+
+
+        if self.prometheus_is_ok && !self.prometheus_multithread_started
+        {
+            self.prometheus_multithread_started = true;
+
+            let mut svr_clone = self.prometheus.clone();
+            let cpu_usage_tx = self.multithread_cpu_usage.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let cpu = prometheus_lib::api::v1::query::cpu::usage::get(&mut svr_clone);
+                    if cpu.is_ok()
+                    {
+                        let unwrap = cpu.unwrap();
+                        let _ = cpu_usage_tx.send(unwrap);
+                    }
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                }
+            });
+    
+            let mut svr_clone = self.prometheus.clone();
+            let memory_usage_tx = self.multithread_memory_usage.0.clone();
+            std::thread::spawn(move || {
+                loop {
+                    let memory = prometheus_lib::api::v1::query::memory::Memory::load(&mut svr_clone);
+                    let _ = memory_usage_tx.send(memory);
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                }
+            });
+        }
+
+
     }
     
 }
@@ -355,7 +703,16 @@ impl eframe::App for Dashboard {
     
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
+        ctx.request_repaint();
+
+        if !self.truenas_is_ok
+        {
+            self.page = AppState::Preferences
+        }
         
+        if (self.truenas_is_ok && !self.truenas_multithread_started) || (self.prometheus_is_ok && !self.prometheus_multithread_started) {
+            self.start_multi();
+        } 
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui: &mut egui::Ui| {
             egui::menu::bar(ui, |ui| {
@@ -366,12 +723,6 @@ impl eframe::App for Dashboard {
                         ui.close_menu();
                     }
 
-
-                    if ui.button("Start").clicked()
-                    {
-                        self.start_multi();
-                        ui.close_menu();
-                    }
                     ui.add_space(10.0);
 
                     if ui.button("Quit").clicked()
