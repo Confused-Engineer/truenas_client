@@ -13,7 +13,7 @@ pub(crate) async fn get<T: serde::de::DeserializeOwned>(url: &str)-> reqwest::Re
 }
 
 #[tokio::main]
-pub(crate) async fn post<T: serde::de::DeserializeOwned>(url: &str, body: String)-> reqwest::Result<T>
+pub(crate) async fn _post<T: serde::de::DeserializeOwned>(url: &str, body: String)-> reqwest::Result<T>
 {
     let client = reqwest::Client::new();
     let resp = client.post(url)

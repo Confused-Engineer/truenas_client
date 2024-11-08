@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use eframe::egui;
+use eframe::{egui, epaint::PathShape};
 use truenas_lib::api::v2_0::pool::VdevOptions;
-
+use egui_gauge::Gauge;
 fn main() -> eframe::Result 
 {
 
@@ -257,14 +257,7 @@ impl Dashboard {
             egui::ScrollArea::vertical().id_salt("first_scroll_area").show(&mut ui[0], |ui| {
 
                 // App List
-                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("Applications").size(20.0)).frame(false)).on_hover_text("Click To Load App's").clicked()
-                {
-                    let temp = truenas_lib::api::v2_0::app::get(&mut self.truenas);
-                    if temp.is_ok()
-                    {
-                        self.applist = temp.unwrap();
-                    } 
-                }
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Applications").size(20.0))});
 
                 let temp = self.multithread_applist.1.try_recv();
                 if temp.is_ok()
@@ -282,7 +275,36 @@ impl Dashboard {
                         ui.vertical(|ui|
                         {
                             ui.heading(app.get_name());
-                            ui.label(format!("State: {}", app.get_state()));
+
+                            ui.horizontal(|ui| {
+                                ui.label(format!("State: {}", app.get_state()));
+                                
+                                match app.get_state().as_str() {
+                                    "RUNNING" => {
+                                        ui.menu_button("v", |ui| {
+                                            if ui.button("Stop").clicked()
+                                            {
+                                                let _ = truenas_lib::api::v2_0::app::stop::post(app.get_name(), &mut self.truenas);
+                                                ui.close_menu();
+                                            }
+                                        });
+                                    },
+                                    "STOPPED" => {
+                                        ui.menu_button("v", |ui| {
+                                            if ui.button("Start").clicked()
+                                            {
+                                                let _ = truenas_lib::api::v2_0::app::start::post(app.get_name(), &mut self.truenas);
+                                                ui.close_menu();
+                                            }
+
+                                        });
+                                    },
+                                    _ => {}
+                                }
+                                
+                                
+                            });
+                            
                             ui.label(format!("Version: {}", app.get_version()));
                             if app.upgrade_available()
                             {
@@ -293,6 +315,7 @@ impl Dashboard {
                             } else {
                                 ui.label("Latest Version");
                             }
+                            
                         });
                         
                     });
@@ -301,14 +324,7 @@ impl Dashboard {
                 }
 
                 // VM List
-                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("Virtual Machines").size(20.0)).frame(false)).on_hover_text("Click To Load VM's").clicked()
-                {
-                    let temp = truenas_lib::api::v2_0::vm::get(&mut self.truenas);
-                    if temp.is_ok()
-                    {
-                        self.virtualmachinelist = temp.unwrap();
-                    }
-                }
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Virtual Machines").size(20.0))});
 
                 let temp = self.multithread_virtualmachinelist.1.try_recv();
                 if temp.is_ok()
@@ -332,14 +348,7 @@ impl Dashboard {
                 
                 //CPU Usage
                 
-                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("CPU Usage").size(20.0)).frame(false)).on_hover_text("Click To Load VM's").clicked()
-                {
-                    let temp = prometheus_lib::api::v1::query::cpu::usage::get(&mut self.prometheus);
-                    if temp.is_ok()
-                    {
-                        self.cpu_usage = temp.unwrap();
-                    }
-                }
+                ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("CPU and RAM Usage").size(20.0))});
 
                 let temp = self.multithread_cpu_usage.1.try_recv();
                 {
@@ -347,20 +356,6 @@ impl Dashboard {
                     {
                         self.cpu_usage = temp.unwrap();
                     }
-                }
-
-                ui.separator();
-
-                ui.heading(format!("Total Usage: {}%", self.cpu_usage));
-                
-                ui.separator();
-
-                //RAM Usage
-
-                if ui.add_sized([ui.available_width(), 30.0], egui::widgets::Button::new(egui::RichText::new("RAM Usage").size(20.0)).frame(false)).on_hover_text("Click To Load VM's").clicked()
-                {
-                    self.memory_usage = prometheus_lib::api::v1::query::memory::Memory::load(&mut self.prometheus);
-                    
                 }
 
                 let temp = self.multithread_memory_usage.1.try_recv();
@@ -371,13 +366,17 @@ impl Dashboard {
                     }
                 }
 
-
                 ui.separator();
 
-                ui.heading(format!("Total RAM: {}GB", self.memory_usage.in_gb().get_total()));
-                ui.heading(format!("Free RAM: {}GB", self.memory_usage.in_gb().get_free()));
-                ui.heading(format!("Used RAM: {}GB", self.memory_usage.in_gb().get_used()));
+                
+
+                
+                ui.columns(2, |ui| {
+                    ui[0].add(Gauge::new(self.cpu_usage, 0.0..=100.0, 200.0, egui::Color32::from_rgb(0, 92, 128)).text("CPU")).on_hover_text("CPU Usage in GB");
+                    ui[1].add(Gauge::new(self.memory_usage.in_gb().get_used(), 0..=self.memory_usage.in_gb().get_total(), 200.0, egui::Color32::from_rgb(0, 92, 128)).text("RAM")).on_hover_text("RAM Usage in GB");
+                });
                 ui.separator();
+
 
                 
 
@@ -442,6 +441,8 @@ impl Dashboard {
                 ui.vertical_centered(|ui| {ui.heading(egui::RichText::new("Pools").size(20.0))});
                 ui.separator();
 
+                
+                
                 let temp = self.multithread_pool_details.1.try_recv();
                 {
                     if temp.is_ok()
@@ -453,7 +454,13 @@ impl Dashboard {
                 for mut pool in self.pool_details.clone().into_iter()
                 {
                     ui.heading(pool.get_name());
+                    
+                    
+                    
                     ui.label(format!("Capacity: {}GB, Free: {}GB, Used: {}GB", pool.get_capacity(), pool.get_free(), pool.get_used()));
+                    ui.add(egui::widgets::ProgressBar::new(pool.get_used_normalized()));
+                    
+                    
                     ui.label(format!("Path: {}", pool.get_path()));
                     ui.label(format!("Healthy: {}, Error Count: {}", pool.is_healthy(), pool.scan_err()));
                     
@@ -462,20 +469,19 @@ impl Dashboard {
 
                     let data_vdev = pool.get_topology().get_data_vdev();
 
-                    ui.horizontal(|ui|{
-                        ui.add_space(15.0);
-                        ui.heading("Data VDEV's");
-                    });
+
+                    ui.heading("⮩ Data VDEV's");
+
                     
                     for mut data in data_vdev.into_iter()
                     {
                         ui.horizontal(|ui|{
-                            ui.add_space(15.0);
-                            ui.label(format!("Name: {}, Type: {}", data.get_name(), data.get_type()));
+                            ui.add_space(10.0);
+                            ui.label(format!("⮩ Name: {}, Type: {}", data.get_name(), data.get_type()));
                         });
                         
                         ui.horizontal(|ui|{
-                            ui.add_space(15.0);
+                            ui.add_space(25.0);
                             ui.label(format!("Errors; Read: {}, Write: {}, Checksum: {}", data.get_r_w_checksume_errors().0, data.get_r_w_checksume_errors().1, data.get_r_w_checksume_errors().2));
                         });
                         ui.add_space(10.0);
@@ -483,20 +489,20 @@ impl Dashboard {
 
                     let spare_vdev = pool.get_topology().get_spare_vdev();
 
-                    ui.horizontal(|ui|{
-                        ui.add_space(15.0);
-                        ui.heading("Spare VDEV's");
-                    });
+                    
+
                     
                     for mut data in spare_vdev.into_iter()
                     {
+                        ui.heading("⮩ Spare VDEV's");
+                        
                         ui.horizontal(|ui|{
-                            ui.add_space(15.0);
-                            ui.label(format!("Name: {}, Type: {}", data.get_name(), data.get_type()));
+                            ui.add_space(10.0);
+                            ui.label(format!("⮩ Name: {}, Type: {}", data.get_name(), data.get_type()));
                         });
                         
                         ui.horizontal(|ui|{
-                            ui.add_space(15.0);
+                            ui.add_space(25.0);
                             ui.label(format!("Errors; Read: {}, Write: {}, Checksum: {}", data.get_r_w_checksume_errors().0, data.get_r_w_checksume_errors().1, data.get_r_w_checksume_errors().2));
                         });
                         ui.add_space(10.0);
@@ -570,7 +576,7 @@ impl Dashboard {
                         let unwrap = applist_thread.unwrap();
                         let _ = applist_tx.send(unwrap);
                     }
-                    std::thread::sleep(std::time::Duration::from_secs(20));
+                    std::thread::sleep(std::time::Duration::from_secs(5));
                 }
             });
     
@@ -584,7 +590,7 @@ impl Dashboard {
                         let unwrap = virtual_thread.unwrap();
                         let _ = virtualmachine_tx.send(unwrap);
                     }
-                    std::thread::sleep(std::time::Duration::from_secs(20));
+                    std::thread::sleep(std::time::Duration::from_secs(40));
                 }
             });
     
@@ -907,6 +913,12 @@ mod tests {
     fn string() {
         let stl = String::from("hello");
         println!("{}", &stl[0..2])
+    }
+
+    #[test]
+    fn num() {
+        let stl: i32 = 4685555;
+        println!("{}", (stl.checked_ilog10().unwrap_or(0)+1));
     }
 
 

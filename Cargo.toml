@@ -19,6 +19,7 @@ simple_crypt = "0.2.3"
 eframe = "0.29.1"
 egui_extras = { version = "0.29.1", features = ["all_loaders"]}
 image = { version = "0.25.4", features = ["png"] }
+egui_gauge = { path = "./../egui_gauge" }
 
 
 [profile.release]

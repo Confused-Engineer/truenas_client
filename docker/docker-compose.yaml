@@ -1,0 +1,21 @@
+services:
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml" #Make/Have a file setup on the host otherwise docker will make s folder with the given name
+    networks:
+      - prometheus
+    ports:
+      - 9090:9090
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter
+    networks:
+      - prometheus
+    ports:
+      - 9100:9100
+
+networks:
+  prometheus:
+    driver: bridge

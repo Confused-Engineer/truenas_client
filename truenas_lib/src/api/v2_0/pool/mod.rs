@@ -36,17 +36,25 @@ impl Pool
 
     pub fn get_capacity(&mut self) -> i64
     {
-        self.size / 1000000000
+        self.size / 1073741824
     }
 
     pub fn get_free(&mut self) -> i64
     {
-        self.free / 1000000000
+        self.free / 1073741824
     }
 
     pub fn get_used(&mut self) -> i64
     {
-        (self.size - self.free) / 1000000000
+        self.allocated / 1073741824
+    }
+
+    pub fn get_used_normalized(&mut self) -> f32
+    {
+        let used = self.allocated as f64;
+        let total = self.size as f64;
+        let result = (used / total) as f32;
+        result
     }
 
     pub fn get_topology(&mut self) -> Topology

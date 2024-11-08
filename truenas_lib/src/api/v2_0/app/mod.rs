@@ -1,5 +1,7 @@
 pub mod upgrade_summary;
 pub mod upgrade;
+pub mod start;
+pub mod stop;
 
 const DIR: &str = "/api/v2.0/app";
 
@@ -18,7 +20,6 @@ pub fn get(server: &mut Server) -> Result<AppList, reqwest::Error>
     let res = crate::api_commands::get::<AppList>(&url, &server.key())?;
     Ok(res)
 }
-
 
 
 

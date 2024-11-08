@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 10s
+scrape_configs:
+ - job_name: prometheus
+   static_configs:
+    - targets:
+       - HOST_IP:9090 # Replace HOST_IP with actual IP
+ - job_name: node
+   static_configs:
+    - targets:
+       - HOST_IP:9100 # Replace HOST_IP with actual IP
