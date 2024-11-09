@@ -1,6 +1,6 @@
 use std::{io::Write, str::FromStr};
 
-const KEY: &[u8; 512] = include_bytes!("../assets/secure_key");
+const KEY: &[u8; 512] = include_bytes!("../assets/key");
 
 
 #[derive(Clone)]
