@@ -12,8 +12,7 @@ jobs:
 
       - name: Make private key file
         run: |
-          $bytes = [Convert]::FromBase64String("${{ secrets.SECURE_KEY }}")
-          [IO.File]::WriteAllBytes("./assets/key", $bytes)
+          echo '${{ secrets.KEY }}' > ./assets/key
       - uses: actions-rs/cargo@v1
         with:
           command: build
