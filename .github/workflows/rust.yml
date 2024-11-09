@@ -12,7 +12,7 @@ jobs:
 
       - name: Make private key file
         run: |
-          echo '${{ secrets.KEY }}' > ./assets/key
+          echo '${{ secrets.KEY }}' | Out-File -Encoding utf8 -FilePath "key"
       - uses: actions-rs/cargo@v1
         with:
           command: build
