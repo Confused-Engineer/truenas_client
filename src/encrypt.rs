@@ -1,6 +1,6 @@
 use std::{io::Write, str::FromStr};
 
-const KEY: &[u8; 512] = include_bytes!("../assets/key");
+const KEY: &str = include_str!("../assets/key");
 
 
 #[derive(Clone)]
@@ -49,7 +49,7 @@ impl Encrypt
         
 
         let mut file = std::fs::File::options().create(true).read(false).write(true).open(save_local)?;
-        let encrypted_data: Vec<u8> = simple_crypt::encrypt(&self.api_key.as_bytes(), KEY).expect("Failed to encrypt");
+        let encrypted_data: Vec<u8> = simple_crypt::encrypt(&self.api_key.as_bytes(), KEY.as_bytes()).expect("Failed to encrypt");
         
         file.write_all(&encrypted_data)?;
         Ok(())
@@ -62,7 +62,7 @@ impl Encrypt
         let save_local = format!("{}/.truenas-client/{}", home_dir, self.file_name);
         let encrypted: Vec<u8> = std::fs::read(&save_local)?;
 
-        let data: Vec<u8> = simple_crypt::decrypt(&encrypted, KEY).expect("Failed to decrypt");
+        let data: Vec<u8> = simple_crypt::decrypt(&encrypted, KEY.as_bytes()).expect("Failed to decrypt");
         let string_wrapped = String::from_utf8(data);
 
         if string_wrapped.is_err()
