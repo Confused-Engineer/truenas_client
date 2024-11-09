@@ -1,14 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn truenas() {
-        let mut server = truenas_lib::server::Server::new("https://tn.a5f.org", include_str!("../assets/api_key"));
-        //let apps = truenas_lib::api::v2_0::app::upgrade::post(&mut server, "actual-budget");
-        let apps = truenas_lib::api::v2_0::app::get(&mut server);
-        println!("{:#?}", apps) 
-    }
+    
 
     #[test]
     fn prometheus() {
