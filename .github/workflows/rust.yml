@@ -3,10 +3,10 @@ on: [push]
 name: Rust-Release-Nightly
 
 jobs:
-  build_and_test:
-    name: Rust Build
+  build_windows:
+    name: Rust Build Windows EXE
     #runs-on: windows-latest
-    runs-on: [self-hosted, windows]
+    runs-on: windows
     steps:
       - uses: actions/checkout@v4
 
@@ -26,3 +26,26 @@ jobs:
           title: "Development Build"
           files: |
             ./target/release/truenas_client.exe
+
+  build_linux_appimage:
+    name: Rust Build Linux AppImage
+    runs-on: windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make private key file
+        run: |
+          echo '${{ secrets.KEY }}' > ./assets/key
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: appimage
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "nightly"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            ./target/release/appimage/truenas_client.AppImage            
