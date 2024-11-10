@@ -39,7 +39,7 @@ jobs:
       
       - uses: actions-rs/cargo@v1
         with:
-            command: build
+          command: build
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
