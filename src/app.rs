@@ -104,7 +104,16 @@ impl Dashboard {
     {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-        
+        let visuals = egui::Visuals
+        {
+            dark_mode: true,
+            faint_bg_color: egui::Color32::from_rgb(0, 92, 128),
+            extreme_bg_color: egui::Color32::from_rgb(60, 20, 10), // The color of the negative space inprogress bar
+            interact_cursor: std::option::Option::Some(egui::CursorIcon::Crosshair),
+            image_loading_spinners: true,
+            ..Default::default()
+        };
+        cc.egui_ctx.set_visuals(visuals);
         Default::default()
     }
 
@@ -147,9 +156,8 @@ impl Dashboard {
 impl eframe::App for Dashboard {
 
     
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 
-        
         ctx.request_repaint();
 
         if !self.truenas_is_ok
