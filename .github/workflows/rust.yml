@@ -3,7 +3,7 @@ on: [push]
 name: Rust-Release-Nightly
 
 jobs:
-  build_windows:
+  build_windows_exe:
     name: Rust Build Windows EXE
     #runs-on: windows-latest
     runs-on: windows
@@ -18,14 +18,12 @@ jobs:
           command: build
           args: --release --all-features
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Temporarily Save File
+        uses: actions/upload-artifact@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "windows-nightly"
-          prerelease: true
-          title: "Dev Build"
-          files: |
-            ./target/release/truenas_client.exe
+          name: exe
+          path: ./target/release/truenas_client.exe
+          retention-days: 1
 
   build_linux_appimage:
     name: Rust Build Linux AppImage
@@ -38,11 +36,33 @@ jobs:
           echo '${{ secrets.KEY }}' > ./assets/key
           cargo appimage
 
+      - name: Temporarily Save File
+        uses: actions/upload-artifact@v2
+        with:
+          name: AppImage
+          path: ./target/appimage/truenas_client.AppImage
+          retention-days: 1
+
+  publish_release:
+    name: Publish Files
+    runs-on: windows
+    needs: ["build_windows_exe","build_linux_appimage"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Get Files
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          merge-multiple: true
+
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "linux-nightly"
+          automatic_release_tag: "nightly"
           prerelease: true
           title: "Dev Build"
           files: |
-            ./target/appimage/truenas_client.AppImage
+            ./artifacts/truenas_client.AppImage
+            ./artifacts/truenas_client.exe
