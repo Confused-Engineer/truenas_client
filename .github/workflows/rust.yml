@@ -23,7 +23,7 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "nightly"
           prerelease: true
-          title: "Development Build"
+          title: "Windows Dev Build"
           files: |
             ./target/release/truenas_client.exe
 
@@ -43,6 +43,6 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "nightly"
           prerelease: true
-          title: "Development Build"
+          title: "Linux Dev Build"
           files: |
             ./target/appimage/truenas_client.AppImage
