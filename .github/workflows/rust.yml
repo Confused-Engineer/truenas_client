@@ -19,7 +19,7 @@ jobs:
           args: --release --all-features
 
       - name: Temporarily Save File
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: exe
           path: ./target/release/truenas_client.exe
@@ -37,7 +37,7 @@ jobs:
           cargo appimage
 
       - name: Temporarily Save File
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: AppImage
           path: ./target/appimage/truenas_client.AppImage
