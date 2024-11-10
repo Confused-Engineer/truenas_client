@@ -10,13 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Make private key file
+      - name: Make private key file and build
         run: |
           echo '${{ secrets.KEY }}' | Out-File -Encoding utf8 -FilePath "./assets/key"
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --all-features
+          cargo build --release
 
       - name: Temporarily Save File
         uses: actions/upload-artifact@v4
@@ -24,6 +21,9 @@ jobs:
           name: exe
           path: ./target/release/truenas_client.exe
           retention-days: 1
+      - name: cleanup
+        run: |
+          cargo clean
 
   build_linux_appimage:
     name: Rust Build Linux AppImage
@@ -42,6 +42,9 @@ jobs:
           name: AppImage
           path: ./target/appimage/truenas_client.AppImage
           retention-days: 1
+      - name: cleanup
+        run: |
+          cargo clean
 
   publish_release:
     name: Publish Files
