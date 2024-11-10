@@ -60,7 +60,7 @@ jobs:
           path: ./artifacts
           merge-multiple: true
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - uses: "ModeSevenIndustrialSolutions/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "nightly"
