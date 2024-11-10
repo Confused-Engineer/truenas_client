@@ -21,9 +21,9 @@ jobs:
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "nightly"
+          automatic_release_tag: "windows-nightly"
           prerelease: true
-          title: "Windows Dev Build"
+          title: "Dev Build"
           files: |
             ./target/release/truenas_client.exe
 
@@ -41,8 +41,8 @@ jobs:
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "nightly"
+          automatic_release_tag: "linux-nightly"
           prerelease: true
-          title: "Linux Dev Build"
+          title: "Dev Build"
           files: |
             ./target/appimage/truenas_client.AppImage
