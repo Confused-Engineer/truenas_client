@@ -62,8 +62,14 @@ impl Encrypt
         let save_local = format!("{}/.truenas-client/{}", home_dir, self.file_name);
         let encrypted: Vec<u8> = std::fs::read(&save_local)?;
 
-        let data: Vec<u8> = simple_crypt::decrypt(&encrypted, KEY.as_bytes()).expect("Failed to decrypt");
-        let string_wrapped = String::from_utf8(data);
+        let data: Result<Vec<u8>, anyhow::Error> = simple_crypt::decrypt(&encrypted, KEY.as_bytes());
+
+        if data.is_err()
+        {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid data after app update"));
+        }
+        
+        let string_wrapped = String::from_utf8(data.unwrap());
 
         if string_wrapped.is_err()
         {
