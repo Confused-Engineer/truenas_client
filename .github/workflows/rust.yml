@@ -36,7 +36,10 @@ jobs:
       - name: Make private key file and build
         run: |
           echo '${{ secrets.KEY }}' > ./assets/key
-          cargo appimage
+      
+      - uses: actions-rs/cargo@v1
+        with:
+            command: build
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
