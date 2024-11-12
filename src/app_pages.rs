@@ -226,7 +226,25 @@ impl Dashboard
                     
                     
                     ui.label(format!("Path: {}", pool.get_path()));
-                    ui.label(format!("Healthy: {}, Error Count: {}", pool.is_healthy(), pool.scan_err()));
+                    
+                    if pool.is_healthy()
+                    {
+                        ui.horizontal(|ui| {
+                            ui.label("Status:");
+                            ui.colored_label(egui::Color32::GREEN, "Healthy");
+                        });
+                        
+                    } else {
+                        ui.horizontal(|ui| {
+                            ui.label("Status:");
+                            ui.colored_label(egui::Color32::RED, "Un-Healthy");
+                            ui.label("|");
+                            ui.label("Error Count:");
+                            ui.colored_label(egui::Color32::RED,format!("{}", pool.scan_err()));
+                            
+                        });
+                    }
+                    
                     
                     ui.add_space(10.0);
                     ui.heading("Topology:");
@@ -245,7 +263,46 @@ impl Dashboard
                         
                         ui.horizontal(|ui|{
                             ui.add_space(25.0);
-                            ui.label(format!("Errors; Read: {}, Write: {}, Checksum: {}", data.get_r_w_checksume_errors().0, data.get_r_w_checksume_errors().1, data.get_r_w_checksume_errors().2));
+
+                            if data.get_r_w_checksume_errors().0 == 0 && data.get_r_w_checksume_errors().1 == 0 && data.get_r_w_checksume_errors().2 == 0
+                            {
+                                ui.colored_label(egui::Color32::GREEN, "No Errors");
+                            } else {
+                                ui.horizontal(|ui| {
+                                    ui.colored_label(egui::Color32::RED, "Errors:");
+                                    ui.label("Read:");
+
+                                    if data.get_r_w_checksume_errors().0 == 0
+                                    {
+                                        ui.label(format!("{}", data.get_r_w_checksume_errors().0));
+                                    } else {
+                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().0));
+                                    }
+
+                                    ui.label("Write:");
+
+                                    if data.get_r_w_checksume_errors().1 == 0
+                                    {
+                                        ui.label(format!("{}", data.get_r_w_checksume_errors().1));
+                                    } else {
+                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().1));
+                                    }
+
+                                    ui.label("Checksum:");
+
+                                    if data.get_r_w_checksume_errors().2 == 0
+                                    {
+                                        ui.label(format!("{}", data.get_r_w_checksume_errors().2));
+                                    } else {
+                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().2));
+                                    }
+
+                                    
+                                });
+                                
+                            }
+
+                            
                         });
                         ui.add_space(10.0);
                     }
@@ -266,7 +323,43 @@ impl Dashboard
                         
                         ui.horizontal(|ui|{
                             ui.add_space(25.0);
-                            ui.label(format!("Errors; Read: {}, Write: {}, Checksum: {}", data.get_r_w_checksume_errors().0, data.get_r_w_checksume_errors().1, data.get_r_w_checksume_errors().2));
+                            if data.get_r_w_checksume_errors().0 == 0 && data.get_r_w_checksume_errors().1 == 0 && data.get_r_w_checksume_errors().2 == 0
+                            {
+                                ui.colored_label(egui::Color32::GREEN, "No Errors");
+                            } else {
+                                ui.horizontal(|ui| {
+                                    ui.colored_label(egui::Color32::RED, "Errors:");
+                                    ui.label("Read:");
+
+                                    if data.get_r_w_checksume_errors().0 == 0
+                                    {
+                                        ui.label(format!("{}", data.get_r_w_checksume_errors().0));
+                                    } else {
+                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().0));
+                                    }
+
+                                    ui.label("Write:");
+
+                                    if data.get_r_w_checksume_errors().1 == 0
+                                    {
+                                        ui.label(format!("{}", data.get_r_w_checksume_errors().1));
+                                    } else {
+                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().1));
+                                    }
+
+                                    ui.label("Checksum:");
+
+                                    if data.get_r_w_checksume_errors().2 == 0
+                                    {
+                                        ui.label(format!("{}", data.get_r_w_checksume_errors().2));
+                                    } else {
+                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().2));
+                                    }
+
+                                    
+                                });
+                                
+                            }
                         });
                         ui.add_space(10.0);
                     }
