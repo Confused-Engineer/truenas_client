@@ -74,6 +74,22 @@ impl Topology
     {
         self.spare.clone()
     }
+
+    pub fn get_all_vdevs(&mut self) -> Vec<PoolCompilation>
+    {
+        let mut vdevs: Vec<PoolCompilation> = Vec::new();
+        for vdev in self.data.clone().into_iter()
+        {
+            vdevs.push(PoolCompilation::Data(vdev));
+        } 
+
+        for vdev in self.spare.clone().into_iter()
+        {
+            vdevs.push(PoolCompilation::Spare(vdev));
+        } 
+
+        vdevs
+    }
 }
 
 impl VdevOptions for Daum
@@ -112,6 +128,14 @@ pub trait VdevOptions {
     fn get_type(&mut self) -> String;
     fn get_r_w_checksume_errors(&mut self) -> (i64, i64, i64);
 }
+
+
+pub enum PoolCompilation {
+    Data(Daum),
+    Spare(Spare),
+}
+
+
 
 use serde::Deserialize;
 use serde::Serialize;

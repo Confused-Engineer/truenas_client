@@ -218,13 +218,10 @@ impl Dashboard
                 for mut pool in self.pool_details.clone().into_iter()
                 {
                     ui.heading(pool.get_name());
-                    
-                    
-                    
+
                     ui.label(format!("Capacity: {}GB, Free: {}GB, Used: {}GB", pool.get_capacity(), pool.get_free(), pool.get_used()));
                     ui.add(egui::widgets::ProgressBar::new(pool.get_used_normalized()));
-                    
-                    
+
                     ui.label(format!("Path: {}", pool.get_path()));
                     
                     if pool.is_healthy()
@@ -244,128 +241,25 @@ impl Dashboard
                             
                         });
                     }
-                    
-                    
+
                     ui.add_space(10.0);
                     ui.heading("Topology:");
 
-                    let data_vdev = pool.get_topology().get_data_vdev();
-
-                    ui.heading("⮩ Data VDEV's");
-
-                    
-                    for mut data in data_vdev.into_iter()
+                    for vdevs in pool.get_topology().get_all_vdevs()
                     {
-                        ui.horizontal(|ui|{
-                            ui.add_space(10.0);
-                            ui.label(format!("⮩ Name: {}, Type: {}", data.get_name(), data.get_type()));
-                        });
-                        
-                        ui.horizontal(|ui|{
-                            ui.add_space(25.0);
-
-                            if data.get_r_w_checksume_errors().0 == 0 && data.get_r_w_checksume_errors().1 == 0 && data.get_r_w_checksume_errors().2 == 0
+                        match vdevs {
+                            truenas_lib::api::v2_0::pool::PoolCompilation::Data(mut vdev) => {
+                                ui.heading("⮩ Data VDEV's");
+                                format_vdev(vdev.get_name(),vdev.get_r_w_checksume_errors(),vdev.get_type(),ui);
+                            },
+                            truenas_lib::api::v2_0::pool::PoolCompilation::Spare(mut vdev) => 
                             {
-                                ui.colored_label(egui::Color32::GREEN, "No Errors");
-                            } else {
-                                ui.horizontal(|ui| {
-                                    ui.colored_label(egui::Color32::RED, "Errors:");
-                                    ui.label("Read:");
-
-                                    if data.get_r_w_checksume_errors().0 == 0
-                                    {
-                                        ui.label(format!("{}", data.get_r_w_checksume_errors().0));
-                                    } else {
-                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().0));
-                                    }
-
-                                    ui.label("Write:");
-
-                                    if data.get_r_w_checksume_errors().1 == 0
-                                    {
-                                        ui.label(format!("{}", data.get_r_w_checksume_errors().1));
-                                    } else {
-                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().1));
-                                    }
-
-                                    ui.label("Checksum:");
-
-                                    if data.get_r_w_checksume_errors().2 == 0
-                                    {
-                                        ui.label(format!("{}", data.get_r_w_checksume_errors().2));
-                                    } else {
-                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().2));
-                                    }
-
-                                    
-                                });
-                                
-                            }
-
-                            
-                        });
-                        ui.add_space(10.0);
+                                ui.heading("⮩ Spare VDEV's");
+                                format_vdev(vdev.get_name(),vdev.get_r_w_checksume_errors(),vdev.get_type(),ui);
+                            },
+                        }
                     }
-
-                    let spare_vdev = pool.get_topology().get_spare_vdev();
-
-                    
-
-                    
-                    for mut data in spare_vdev.into_iter()
-                    {
-                        ui.heading("⮩ Spare VDEV's");
-                        
-                        ui.horizontal(|ui|{
-                            ui.add_space(10.0);
-                            ui.label(format!("⮩ Name: {}, Type: {}", data.get_name(), data.get_type()));
-                        });
-                        
-                        ui.horizontal(|ui|{
-                            ui.add_space(25.0);
-                            if data.get_r_w_checksume_errors().0 == 0 && data.get_r_w_checksume_errors().1 == 0 && data.get_r_w_checksume_errors().2 == 0
-                            {
-                                ui.colored_label(egui::Color32::GREEN, "No Errors");
-                            } else {
-                                ui.horizontal(|ui| {
-                                    ui.colored_label(egui::Color32::RED, "Errors:");
-                                    ui.label("Read:");
-
-                                    if data.get_r_w_checksume_errors().0 == 0
-                                    {
-                                        ui.label(format!("{}", data.get_r_w_checksume_errors().0));
-                                    } else {
-                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().0));
-                                    }
-
-                                    ui.label("Write:");
-
-                                    if data.get_r_w_checksume_errors().1 == 0
-                                    {
-                                        ui.label(format!("{}", data.get_r_w_checksume_errors().1));
-                                    } else {
-                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().1));
-                                    }
-
-                                    ui.label("Checksum:");
-
-                                    if data.get_r_w_checksume_errors().2 == 0
-                                    {
-                                        ui.label(format!("{}", data.get_r_w_checksume_errors().2));
-                                    } else {
-                                        ui.colored_label(egui::Color32::RED, format!("{}", data.get_r_w_checksume_errors().2));
-                                    }
-
-                                    
-                                });
-                                
-                            }
-                        });
-                        ui.add_space(10.0);
-                    }
-
                     ui.separator();
-
                 }
 
             });
@@ -665,4 +559,59 @@ fn auto_color_label(label: &str, ui: &mut egui::Ui)
 
         _ => {}
     }
+}
+
+fn format_vdev(name: String, r_w_checksum: (i64, i64, i64), vdevtype: String, ui: &mut egui::Ui)
+{
+    ui.horizontal(|ui|{
+        ui.add_space(10.0);
+        ui.label(format!("⮩ Name: {}, Type: {}", name, vdevtype));
+    });
+
+
+
+        
+        ui.horizontal(|ui|{
+            ui.add_space(25.0);
+            if r_w_checksum.0 == 0 && r_w_checksum.1 == 0 && r_w_checksum.2 == 0
+            {
+                ui.colored_label(egui::Color32::GREEN, "No Errors");
+            } else {
+                ui.horizontal(|ui| {
+                    ui.colored_label(egui::Color32::RED, "Errors:");
+                    ui.label("Read:");
+
+                    if r_w_checksum.0 == 0
+                    {
+                        ui.label(format!("{}", r_w_checksum.0));
+                    } else {
+                        ui.colored_label(egui::Color32::RED, format!("{}", r_w_checksum.0));
+                    }
+
+                    ui.label("Write:");
+
+                    if r_w_checksum.1 == 0
+                    {
+                        ui.label(format!("{}", r_w_checksum.1));
+                    } else {
+                        ui.colored_label(egui::Color32::RED, format!("{}", r_w_checksum.1));
+                    }
+
+                    ui.label("Checksum:");
+
+                    if r_w_checksum.2 == 0
+                    {
+                        ui.label(format!("{}", r_w_checksum.2));
+                    } else {
+                        ui.colored_label(egui::Color32::RED, format!("{}", r_w_checksum.2));
+                    }
+
+                    
+                });
+                
+            }
+        });
+        ui.add_space(10.0);
+
+
 }
