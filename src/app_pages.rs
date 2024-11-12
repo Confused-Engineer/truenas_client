@@ -73,7 +73,7 @@ impl Dashboard
                                     let _ = truenas_lib::api::v2_0::app::upgrade::post(&mut self.truenas, &app.get_name());
                                 }
                             } else {
-                                ui.label("Latest Version");
+                                ui.label("Version: Latest");
                             }
                             
                         });
@@ -219,7 +219,7 @@ impl Dashboard
                 {
                     ui.heading(pool.get_name());
 
-                    ui.label(format!("Capacity: {}GB, Free: {}GB, Used: {}GB", pool.get_capacity(), pool.get_free(), pool.get_used()));
+                    ui.label(format!("Capacity: {}GB | Free: {}GB | Used: {}GB", pool.get_capacity(), pool.get_free(), pool.get_used()));
                     ui.add(egui::widgets::ProgressBar::new(pool.get_used_normalized()));
 
                     ui.label(format!("Path: {}", pool.get_path()));
@@ -565,7 +565,7 @@ fn format_vdev(name: String, r_w_checksum: (i64, i64, i64), vdevtype: String, ui
 {
     ui.horizontal(|ui|{
         ui.add_space(10.0);
-        ui.label(format!("⮩ Name: {}, Type: {}", name, vdevtype));
+        ui.label(format!("⮩ Name: {} | Type: {}", name, vdevtype));
     });
 
 
@@ -588,7 +588,7 @@ fn format_vdev(name: String, r_w_checksum: (i64, i64, i64), vdevtype: String, ui
                         ui.colored_label(egui::Color32::RED, format!("{}", r_w_checksum.0));
                     }
 
-                    ui.label("Write:");
+                    ui.label("| Write:");
 
                     if r_w_checksum.1 == 0
                     {
@@ -597,7 +597,7 @@ fn format_vdev(name: String, r_w_checksum: (i64, i64, i64), vdevtype: String, ui
                         ui.colored_label(egui::Color32::RED, format!("{}", r_w_checksum.1));
                     }
 
-                    ui.label("Checksum:");
+                    ui.label("| Checksum:");
 
                     if r_w_checksum.2 == 0
                     {
