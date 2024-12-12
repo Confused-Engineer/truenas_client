@@ -75,4 +75,4 @@ jobs:
           title: "Dev Build"
           files: |
             ./artifacts/truenas_client.AppImage
-            ./artifacts/truenas_client.exe
+            ./artifacts/TrueNASClientSetup.exe
